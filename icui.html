@@ -151,11 +151,14 @@
 			function connect() {
 				var host = window.location.hostname;
 				var port = "";
+				var protocol = "ws://";
 				
-				if (!host)
+				if (!host){
 					host = 'echo.websocket.org';
+					protocol = "wss://";
+				}
 					
-				var serverUrl = "wss://" + host + port;
+				var serverUrl = protocol + host + port;
 				connection = new WebSocket(serverUrl);
 
 				connection.onopen = function(evt) {
@@ -217,7 +220,7 @@
 					}
 					if (msg.wifi_scan && Array.isArray(msg.wifi_scan)){
 						$('#dropdown-wifi-menu').empty();
-						$('#dropdown-wifi-menu').append('<p class="dropdown-header">Found networks</p>');
+						$('#dropdown-wifi-menu').append('<p class="dropdown-header">'+(msg.wifi_scan.length==0?'No networks found':'Found networks')+'</p>');
 						msg.wifi_scan.forEach (function(ssid){
 							$('#dropdown-wifi-menu').append('<button class="dropdown-item" type="button" wifi-network>'+ssid+'</button>');
 						});
@@ -396,8 +399,8 @@
 				</button>
 			  </div>
 			  <div class="modal-body">
-				Irrigation Controller UI v0.1<br>
-				BelianovSoft &copy 2016
+				Irrigation Controller UI v1.0-RC1<br>
+				BelianovSoft &copy 2018
 			  </div>
 			  <div class="modal-footer">
 				<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
