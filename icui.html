@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+
+	<!-- Rangeslider CSS -->
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/rangeslider.js/2.3.2/rangeslider.min.css" />
+	
+	<!-- Alert Notification CSS -->
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.2.3/animate.min.css" rel="stylesheet"> 
+	
+	
+	<style>
+		.referenceMarker{
+			background: green;
+			width: 2px;
+			height: 5px;
+		}	
+	</style>
+    <title>Irrigation Controller</title>
+  </head>
+  <body>
+
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
+	
+	<!-- Rangeslider JS -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/rangeslider.js/2.3.2/rangeslider.min.js"></script>
+	
+	<!-- Alert Notification JS -->
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mouse0270-bootstrap-notify/3.1.5/bootstrap-notify.min.js"></script>
+			
+	
+	<script>
+		$(function(){
+			var $document = $(document);
+			var selector = '[data-rangeslider], [admin-rangeslider]';
+			var $element = $(selector);
+			
+			// For ie8 support
+			var textContent = ('textContent' in document) ? 'textContent' : 'innerText';
+			
+			function valueOutput(element) {
+				var value = element.value;
+				var output = element.parentNode.getElementsByTagName('output')[0] || element.parentNode.parentNode.getElementsByTagName('output')[0];
+				var frequencyValueMap = ["10 kHz", "20 kHz", "50 kHz", "100 kHz", "200 kHz", "500 kHz", "1 MHz"]
+				if (element.attributes.id && element.attributes.id.nodeValue == "msof")
+					value = frequencyValueMap[value];
+				
+				output[textContent] = value;
+			}
+			
+			//one way to update provide user feedback when sliding the button on the range slider.
+			$document.on('input', 'input[type="range"], ' + selector, function(e) {
+				valueOutput(e.target);
+				//console.log('onInput', e);	
+				
+			});
+			
+			//set value
+			//$('#itrs').val(0).change(); 
+			$('[data-rangeslider],[admin-rangeslider]').val(0).change();
+			
+			//set reference value
+			$('.referenceMarker').css({"margin-left": "20px"});
+			
+			
+			
+			
+			//if user resizes the browser window, rangesliders on non-active tabs will not be with proper sizing
+			//therefore we update them each time user switches tabs.
+			$('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+				var selector = '['+e.target.attributes.controls.nodeValue +'-rangeslider]';
+				$(selector).rangeslider('update', true);
+
+			});
+
+			
+			//dynamically loading dropdown list with wifi networks
+			$('#dropdown-wifi-scan').on('shown.bs.dropdown', function () {
+				$('#dropdown-wifi-menu').empty().append('<p class="m-3">Scanning for networks...</p>');
+				$('#dropdown-wifi-button').addClass('disabled');
+				if (connection.readyState == 1) { //we are connected
+					connection.send(JSON.stringify({wifi_scan:[]}));
+				}		
+				
+				//scan for networks asynchronously
+				setTimeout(function() {
+					return;
+					$('#dropdown-wifi-menu').empty();
+					$('#dropdown-wifi-menu').append('<p class="dropdown-header">Found networks</p>');
+					$('#dropdown-wifi-menu').append('<button class="dropdown-item" type="button" wifi-network>belyanovi</button>');
+					$('#dropdown-wifi-button').removeClass('disabled');
+				}, 2000);
+			});
+			
+			//extracts the ssid of the selected network from the dropdown list
+			//and puts in the input-ssid field
+			$document.on('click', 'button[wifi-network]', function (e){
+				$('#input-ssid').val(e.target.innerText)
+			});
+			
+			$document.on('click', 'button[wifi-save]', function (e){
+				if (connection.readyState == 1) { //we are connected
+					connection.send(JSON.stringify({wifi:{ssid:$('#input-ssid').val(), pass:$('#input-wifi-password').val()}}));
+					$('wifi_save_output').html("Your Irrigation Controller will now restart. Pls reload this page in 20 sec and consider IP address change!");
+					$('wifi_save_output').parent().addClass("bg-warning");
+				}
+			});
+			
+			
+			$element.rangeslider({
+
+				// Deactivate the feature detection
+				polyfill: false,
+
+				// Callback function
+				onInit: function() {
+					valueOutput(this.$element[0]);
+				},
+
+				// Callback function
+				onSlide: function(position, value) {
+					//console.log('onSlide');
+					//console.log('position: ' + position, 'value: ' + value);
+				},
+
+				// Callback function
+				onSlideEnd: function(position, value) {
+					var slider = this.$element[0].id;
+					console.log('slider: ' + slider, 'value: ' + value);
+
+					if (connection.readyState == 1) { //we are connected
+						connection.send(JSON.stringify({settings:{[slider]:value}}));
+					}
+					
+				}
+			});	
+
+			//setup websocket connection
+			var connection;
+			function connect() {
+				var host = window.location.hostname;
+				var port = "";
+				
+				if (!host)
+					host = 'echo.websocket.org';
+					
+				var serverUrl = "wss://" + host + port;
+				connection = new WebSocket(serverUrl);
+
+				connection.onopen = function(evt) {
+					$.notify({message: "Hello, fellow."});
+					$('[status-text-field]').html('<span class="text-success">Online</span>');
+					if (host == 'echo.websocket.org')
+						setTimeout(function(){connection.send(JSON.stringify({settings:{smc:65,itrs:35}, wifi:{ssid:"my_ssid"}}))}, 250);
+				};
+
+				connection.onerror = function(evt) {
+					$.notify({
+							message: "<strong>Error:</strong> Can't connect. Try reloading the page..."
+						},{
+							type: 'warning',
+						});
+					$('[status-text-field]').html('<span class="bg-warning">Offline</span>');
+				};
+				
+
+				connection.onmessage = function(evt) {
+
+					var msg = JSON.parse(evt.data);
+					console.log('received msg: ', msg);
+					
+					/*Expected msg structure
+					{
+						settings:{
+							itrs:30,
+							dtrs:60,
+							iirs:24,
+							smrs:50,
+							smc:40
+						},
+						wifi_scan:[
+							network1,
+							network2,
+							...
+						], 
+						wifi:{
+							ssid:"current-ssid",
+							pass:"password"
+						}
+					}
+					*/
+					
+					if (msg.settings){
+						if (msg.settings.itrs) $('#itrs').val(msg.settings.itrs).change();
+						if (msg.settings.dtrs) $('#dtrs').val(msg.settings.dtrs).change();
+						if (msg.settings.iirs) $('#iirs').val(msg.settings.iirs).change();
+						if (msg.settings.smrs) $('#smrs').val(msg.settings.smrs).change(); 
+						if (msg.settings.smc != null && msg.settings.smc >=0 && msg.settings.smc <= 100){
+							var rsWidth = $('#smrs').parent().width() - 40;
+							var pos = rsWidth * msg.settings.smc / 100 + 20;
+							$('.referenceMarker').css({"margin-left": pos+"px"});
+						}
+					}
+					if (msg.wifi){
+						if (msg.wifi.ssid) $('#input-ssid').val(msg.wifi.ssid);
+					}
+					if (msg.wifi_scan && Array.isArray(msg.wifi_scan)){
+						$('#dropdown-wifi-menu').empty();
+						$('#dropdown-wifi-menu').append('<p class="dropdown-header">Found networks</p>');
+						msg.wifi_scan.forEach (function(ssid){
+							$('#dropdown-wifi-menu').append('<button class="dropdown-item" type="button" wifi-network>'+ssid+'</button>');
+						});
+						$('#dropdown-wifi-button').removeClass('disabled');
+					}					
+				switch(msg.type) {
+				  case "id":
+					clientID = msg.id;
+					setUsername();
+					break;
+				  case "username":
+					text = "<b>User <em>" + msg.name + "</em> signed in at " + timeStr + "</b><br>";
+					break;
+				  case "message":
+					text = "(" + timeStr + ") <b>" + msg.name + "</b>: " + msg.text + "<br>";
+					break;
+				  case "rejectusername":
+					text = "<b>Your username has been set to <em>" + msg.name + "</em> because the name you chose is in use.</b><br>";
+					break;
+				  case "userlist":
+					var ul = "";
+					var i;
+
+					for (i=0; i < msg.users.length; i++) {
+					  ul += msg.users[i] + "<br>";
+					}
+					document.getElementById("userlistbox").innerHTML = ul;
+					break;
+				}
+
+			  };
+			};
+			connect();
+		});
+	</script>
+	
+	<nav class="navbar navbar-expand-sm navbar-light bg-light">
+		<span class="navbar-brand d-none d-sm-block mb-0 h1">Menu</span>
+		<span class="navbar-text d-block d-sm-none" status-text-field></span>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup" aria-controls="navbarNavAltMarkup" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="navbar-toggler-icon"></span>
+		</button>
+		<div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+			<div class="nav nav-pills nav-tabs mr-auto flex-column flex-sm-row" id="nav-tab" role="tablist">
+				<a class="nav-item nav-link active text-center" id="nav-irrigation-tab" data-toggle="tab" href="#nav-irrigation" role="tab" controls="data">Irrigation</a>
+				<a class="nav-item nav-link text-center" id="nav-admin-tab" data-toggle="tab"   href="#nav-admin" role="tab" controls="admin">Settings</a>
+				<a class="nav-item nav-link text-center" id="nav-about-tab" data-toggle="modal" href="#nav-about" role="tab" data-target="#nav-about">About</a>
+			</div>
+			<span class="navbar-text d-none d-sm-block" status-text-field></span>
+		</div>
+	</nav>
+	<hr>
+	<div class="tab-content" id="nav-tabContent">
+		<div class="tab-pane fade show active" id="nav-irrigation" role="tabpanel">
+			<div class="container" style="background-color: rgba(0,0,0,0.0);">
+				<div class="row" >
+					<div class="col" >
+						<span class="align-middle text-center" style="height: 150px;"><h1>Irrigation Settings</h1></span>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-md card text-center">
+						<div class="card-body">
+							<h5 class="card-title">Irrigation time [min]</h5>
+							<div class="card-text">
+								<p>Defines how long irrigation valve is open.</p>
+								<input type="range" min="1" max="60" value="0" id="itrs" data-rangeslider>
+								<br>
+								<h5><output></output></h5>
+							</div>
+						</div>
+					</div>
+					<div class="col-md card text-center">
+						<div class="card-body">
+							<h5 class="card-title">Dissolving time [min]</h5>
+							<div class="card-text">
+								<p>Allows water to dissolve before we check soil moisture level. </p>
+								<input type="range" min="1" max="120" value="0" id="dtrs" data-rangeslider>
+								<br>
+								<h5><output></output></h5>
+							</div>					
+						</div>			
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-md card text-center">
+						<div class="card-body">
+							<h5 class="card-title">Irrigation interval [hours]</h5>
+							<div class="card-text">
+								<p>Defines interval between two irrigation cycles.</p>
+								<input type="range" min="1" max="24" value="0" id="iirs" data-rangeslider>
+								<br>
+								<h5><output></output></h5>
+							</div>					
+						</div>			
+					</div>
+					<div class="col-md card text-center">
+						<div class="card-body">
+							<h5 class="card-title">Soil moisture level</h5>
+							<div class="card-text">
+								<p>Defines target moisture level.</p>
+								<div class="referenceMarker"></div>
+								<input type="range" min="0" max="100" value="0" id="smrs" data-rangeslider>
+								<div class="referenceMarker"></div>
+								<br>
+								<h5><output></output></h5>
+							</div>					
+						</div>
+					</div>
+				</div>
+			</div>	
+		</div>
+		<div class="tab-pane fade" id="nav-admin" role="tabpanel">
+			<div class="container" style="background-color: rgba(0,0,0,0.0);">
+				<div class="row" >
+					<div class="col" >
+						<span class="align-middle text-center" style="height: 150px;"><h1>System Settings</h1></span>
+					</div>
+				</div>			
+				<div class="row">
+					<div class="col-md card text-center">
+						<div class="card-body">
+							<h5 class="card-title ">WiFi Settings</h5>
+							<form>
+								<div class="form-group ">
+									<div class="input-group mb-3">
+										<div class="input-group-prepend" id="dropdown-wifi-scan">
+											<button class="btn btn-outline-secondary dropdown-toggle" type="button" id="dropdown-wifi-button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">SSID</button>
+											<div class="dropdown-menu" id="dropdown-wifi-menu">
+
+											</div>
+										</div>
+										<input type="text" class="form-control" id="input-ssid" >
+									</div>
+								</div>
+								<div class="form-group ">
+									<div class="input-group mb-3">
+									  <div class="input-group-prepend">
+										<span class="input-group-text" id="basic-addon1">Password</span>
+									  </div>
+									  <input type="text" class="form-control" id="input-wifi-password">
+									</div>
+								</div>
+								<div class="form-group row text-left">
+									<div class="col-sm-2 col-md-3 col-lg-2">
+										<button type="button" class="btn btn-primary" wifi-save>Save</button>
+									</div>
+									<div class="col">
+										<p><wifi_save_output></wifi_save_output></p>
+									</div>
+								</div>
+							</form>							
+						</div>
+					</div>
+					<div class="col-md card text-center">
+						<div class="card-body">
+							<h5 class="card-title">Moisture sensor</h5>
+							<div class="card-text">
+								<p>Defines moisture sensor operating frequency.</p>
+								<input type="range" id="msof" min="0" max="6" value="3" admin-rangeslider>
+								<br>
+								<h5><output></output></h5>
+							</div>					
+						</div>			
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="modal fade" id="nav-about" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+		  <div class="modal-dialog" role="document">
+			<div class="modal-content">
+			  <div class="modal-header">
+				<h5 class="modal-title" id="exampleModalLabel">About...</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+				  <span aria-hidden="true">&times;</span>
+				</button>
+			  </div>
+			  <div class="modal-body">
+				Irrigation Controller UI v0.1<br>
+				BelianovSoft &copy 2016
+			  </div>
+			  <div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+			  </div>
+			</div>
+		  </div>
+		</div>		
+	</div>
+  
+  
+  </body>
+</html>
