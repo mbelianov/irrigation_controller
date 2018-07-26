@@ -14,13 +14,22 @@
 	<!-- Alert Notification CSS -->
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.2.3/animate.min.css" rel="stylesheet"> 
 	
+	<!-- Font Awesome CSS -->
+	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css" integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
+	
 	
 	<style>
 		.referenceMarker{
 			background: green;
 			width: 2px;
 			height: 5px;
-		}	
+		}
+
+		/* body {
+		  /* Margin bottom by footer height */
+		  margin-bottom: 60px;
+		}*/		
+		
 	</style>
     <title>Irrigation Controller</title>
   </head>
@@ -38,6 +47,8 @@
 	
 	<!-- Alert Notification JS -->
 	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mouse0270-bootstrap-notify/3.1.5/bootstrap-notify.min.js"></script>
+	
+	
 			
 	
 	<script>
@@ -163,14 +174,14 @@
 
 				connection.onopen = function(evt) {
 					$.notify({message: "Hello, fellow."});
-					$('[status-text-field]').html('<span class="text-success">Online</span>');
+					$('[status-text-field]').html('<div class="d-inline-block mx-0"><span class="badge badge-info" title="Time since last irrigation cycle" lic></span></div><div class="d-inline-block mx-0"><span class="badge badge-light" pic>-</span></div><div class="d-inline-block mx-0"><span class="badge badge-info" title="Time till next cycle"nic></span></div>');
 					if (host == 'echo.websocket.org')
-						setTimeout(function(){connection.send(JSON.stringify({settings:{smc:65,itrs:35}, wifi:{ssid:"my_ssid"}}))}, 250);
+						setTimeout(function(){connection.send(JSON.stringify({settings:{smc:65,itrs:35}, status:{lic:3,  nic:5}, wifi:{ssid:"my_ssid"}}))}, 250);
 				};
 
 				connection.onerror = function(evt) {
 					$.notify({
-							message: "<strong>Error:</strong> Can't connect. Try reloading the page..."
+							message: "<strong>Error:</strong> Can't connect. Try reloading the page...",
 						},{
 							type: 'warning',
 						});
@@ -200,6 +211,11 @@
 						wifi:{
 							ssid:"current-ssid",
 							pass:"password"
+						},
+						status:{
+							lic: 3,
+							pic: "W",
+							nic: 2
 						}
 					}
 					*/
@@ -211,10 +227,16 @@
 						if (msg.settings.smrs) $('#smrs').val(msg.settings.smrs).change(); 
 						if (msg.settings.smc != null && msg.settings.smc >=0 && msg.settings.smc <= 100){
 							var rsWidth = $('#smrs').parent().width() - 40;
-							var pos = rsWidth * msg.settings.smc / 100 + 20;
-							$('.referenceMarker').css({"margin-left": pos+"px"});
+							var pos = 100*(rsWidth * msg.settings.smc / 100 + 20)/rsWidth;
+							$('.referenceMarker').css({"margin-left": pos+"%"});
 						}
 					}
+					if (msg.status){
+						if (msg.status.lic) $('[lic]').text(msg.status.lic);
+						if (msg.status.pic) $('[pic]').text(msg.status.pic);
+						if (msg.status.nic) $('[nic]').text(msg.status.nic);
+						
+					}					
 					if (msg.wifi){
 						if (msg.wifi.ssid) $('#input-ssid').val(msg.wifi.ssid);
 					}
@@ -331,7 +353,14 @@
 						</div>
 					</div>
 				</div>
-			</div>	
+			</div>
+<!--			<nav class="navbar fixed-bottom navbar-expand navbar-light bg-light">
+				<strong class="pr-2">Info: </strong>
+				<span class="pr-2">Last irrigation:</span><span id='tsli'>25h ago;</span>
+				<span class="px-2">Previous cycle: </span><span id='rpic'>wet</span>
+				
+			</nav>
+-->			
 		</div>
 		<div class="tab-pane fade" id="nav-admin" role="tabpanel">
 			<div class="container" style="background-color: rgba(0,0,0,0.0);">
@@ -399,7 +428,7 @@
 				</button>
 			  </div>
 			  <div class="modal-body">
-				Irrigation Controller UI v1.0-RC1<br>
+				Irrigation Controller UI v1.1-RC1<br>
 				BelianovSoft &copy 2018
 			  </div>
 			  <div class="modal-footer">
