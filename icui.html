@@ -174,7 +174,10 @@
 
 				connection.onopen = function(evt) {
 					$.notify({message: "Hello, fellow."});
-					$('[status-text-field]').html('<div class="d-inline-block mx-0"><span class="badge badge-info" title="Time since last irrigation cycle" lic></span></div><div class="d-inline-block mx-0"><span class="badge badge-light" pic>-</span></div><div class="d-inline-block mx-0"><span class="badge badge-info" title="Time till next cycle"nic></span></div>');
+					var sft = '<div class="d-inline-block mx-0 text-monospace font-weight-bold" title="Time since last irrigation cycle">Prev: <span class="badge badge-info"  lic>0</span></div>';
+					sft += '<br>';
+					sft += '<div class="d-inline-block mx-0 text-monospace font-weight-bold" title="Time till next cycle">Next: <span class="badge badge-info" nic>0</span></div>';
+					$('[status-text-field]').html(sft);
 					if (host == 'echo.websocket.org')
 						setTimeout(function(){connection.send(JSON.stringify({settings:{smc:65,itrs:35}, status:{lic:3,  nic:5}, wifi:{ssid:"my_ssid"}}))}, 250);
 				};
@@ -232,8 +235,8 @@
 						}
 					}
 					if (msg.status){
-						if (msg.status.lic) $('[lic]').text(msg.status.lic);
-						if (msg.status.pic) $('[pic]').text(msg.status.pic);
+						if (msg.status.lic) $('[lic]').html(msg.status.lic);
+						//if (msg.status.pic) $('[pic]').text(msg.status.pic);
 						if (msg.status.nic) $('[nic]').text(msg.status.nic);
 						
 					}					
@@ -428,7 +431,7 @@
 				</button>
 			  </div>
 			  <div class="modal-body">
-				Irrigation Controller UI v1.1-RC1<br>
+				Irrigation Controller UI v1.1<br>
 				BelianovSoft &copy 2018
 			  </div>
 			  <div class="modal-footer">
